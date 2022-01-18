@@ -55,7 +55,7 @@ public class SwordRPC {
         let tempDir = NSTemporaryDirectory()
 
         for ipcPort in 0 ..< 10 {
-            let socketPath = tempDir + "discord-ipc-\(ipcPort)-gaming"
+            let socketPath = tempDir + "discord-ipc-\(ipcPort)"
             let localClient = ConnectionClient(pipe: socketPath)
             do {
                 try localClient.connect()
@@ -72,9 +72,9 @@ public class SwordRPC {
                 continue
             }
 
-//            subscribe("ACTIVITY_JOIN")
-//            subscribe("ACTIVITY_SPECTATE")
-//            subscribe("ACTIVITY_JOIN_REQUEST")
+            subscribe("ACTIVITY_JOIN")
+            subscribe("ACTIVITY_SPECTATE")
+            subscribe("ACTIVITY_JOIN_REQUEST")
             return
         }
 
