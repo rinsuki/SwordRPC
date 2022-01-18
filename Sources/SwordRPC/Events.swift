@@ -6,42 +6,40 @@
 //  Copyright © 2017 Alejandro Alonso. All rights reserved.
 //
 
-extension SwordRPC {
+public extension SwordRPC {
+    func onConnect(
+        handler: @escaping (_ rpc: SwordRPC) -> Void
+    ) {
+        connectHandler = handler
+    }
 
-  public func onConnect(
-    handler: @escaping (_ rpc: SwordRPC) -> ()
-  ) {
-    self.connectHandler = handler
-  }
+    func onDisconnect(
+        handler: @escaping (_ rpc: SwordRPC, _ code: Int?, _ msg: String?) -> Void
+    ) {
+        disconnectHandler = handler
+    }
 
-  public func onDisconnect(
-    handler: @escaping (_ rpc: SwordRPC, _ code: Int?, _ msg: String?) -> ()
-  ) {
-    self.disconnectHandler = handler
-  }
+    func onError(
+        handler: @escaping (_ rpc: SwordRPC, _ code: Int, _ msg: String) -> Void
+    ) {
+        errorHandler = handler
+    }
 
-  public func onError(
-    handler: @escaping (_ rpc: SwordRPC, _ code: Int, _ msg: String) -> ()
-  ) {
-    self.errorHandler = handler
-  }
+    func onJoinGame(
+        handler: @escaping (_ rpc: SwordRPC, _ secret: String) -> Void
+    ) {
+        joinGameHandler = handler
+    }
 
-  public func onJoinGame(
-    handler: @escaping (_ rpc: SwordRPC, _ secret: String) -> ()
-  ) {
-    self.joinGameHandler = handler
-  }
+    func onSpectateGame(
+        handler: @escaping (_ rpc: SwordRPC, _ secret: String) -> Void
+    ) {
+        spectateGameHandler = handler
+    }
 
-  public func onSpectateGame(
-    handler: @escaping (_ rpc: SwordRPC, _ secret: String) -> ()
-  ) {
-    self.spectateGameHandler = handler
-  }
-
-  public func onJoinRequest(
-    handler: @escaping (_ rpc: SwordRPC, _ request: JoinRequest, _ secret: String) -> ()
-  ) {
-    self.joinRequestHandler = handler
-  }
-
+    func onJoinRequest(
+        handler: @escaping (_ rpc: SwordRPC, _ request: JoinRequest, _ secret: String) -> Void
+    ) {
+        joinRequestHandler = handler
+    }
 }

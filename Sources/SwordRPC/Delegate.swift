@@ -6,70 +6,70 @@
 //  Copyright © 2017 Alejandro Alonso. All rights reserved.
 //
 
-public protocol SwordRPCDelegate: class {
-  func swordRPCDidConnect(
-    _ rpc: SwordRPC
-  )
+public protocol SwordRPCDelegate: AnyObject {
+    func swordRPCDidConnect(
+        _ rpc: SwordRPC
+    )
 
-  func swordRPCDidDisconnect(
-    _ rpc: SwordRPC,
-    code: Int?,
-    message msg: String?
-  )
+    func swordRPCDidDisconnect(
+        _ rpc: SwordRPC,
+        code: Int?,
+        message msg: String?
+    )
 
-  func swordRPCDidReceiveError(
-    _ rpc: SwordRPC,
-    code: Int,
-    message msg: String
-  )
+    func swordRPCDidReceiveError(
+        _ rpc: SwordRPC,
+        code: Int,
+        message msg: String
+    )
 
-  func swordRPCDidJoinGame(
-    _ rpc: SwordRPC,
-    secret: String
-  )
+    func swordRPCDidJoinGame(
+        _ rpc: SwordRPC,
+        secret: String
+    )
 
-  func swordRPCDidSpectateGame(
-    _ rpc: SwordRPC,
-    secret: String
-  )
-  
-  func swordRPCDidReceiveJoinRequest(
-    _ rpc: SwordRPC,
-    request: JoinRequest,
-    secret: String
-  )
+    func swordRPCDidSpectateGame(
+        _ rpc: SwordRPC,
+        secret: String
+    )
+
+    func swordRPCDidReceiveJoinRequest(
+        _ rpc: SwordRPC,
+        request: JoinRequest,
+        secret: String
+    )
 }
 
-extension SwordRPCDelegate {
-  public func swordRPCDidConnect(
-    _ rpc: SwordRPC
-  ) {}
+public extension SwordRPCDelegate {
+    func swordRPCDidConnect(
+        _: SwordRPC
+    ) {}
 
-  public func swordRPCDidDisconnect(
-    _ rpc: SwordRPC,
-    code: Int?,
-    message msg: String?
-  ) {}
+    func swordRPCDidDisconnect(
+        _: SwordRPC,
+        code _: Int?,
+        message _: String?
+    ) {}
 
-  public func swordRPCDidReceiveError(
-    _ rpc: SwordRPC,
-    code: Int,
-    message msg: String
-  ) {}
+    func swordRPCDidReceiveError(
+        _: SwordRPC,
+        code _: Int,
+        message _: String
+    ) {}
 
-  public func swordRPCDidJoinGame(
-    _ rpc: SwordRPC,
-    secret: String
-  ) {}
+    func swordRPCDidJoinGame(
+        _: SwordRPC,
+        secret _: String
+    ) {}
 
-  public func swordRPCDidSpectateGame(
-    _ rpc: SwordRPC,
-    secret: String
-  ) {}
+    func swordRPCDidSpectateGame(
+        _: SwordRPC,
+        secret _: String
+    ) {}
 
-  public func swordRPCDidReceiveJoinRequest(
-    _ rpc: SwordRPC,
-    request: JoinRequest,
-    secret: String
-  ) {}
+    func swordRPCDidReceiveJoinRequest(
+        _: SwordRPC,
+        request _: JoinRequest,
+        secret _: String
+    ) {}
 }

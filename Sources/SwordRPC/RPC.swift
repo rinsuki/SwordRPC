@@ -7,207 +7,100 @@
 //
 
 import Foundation
-import Socket
 
 extension SwordRPC {
+    /// Sends a handshake to begin RPC interaction.
+    func handshake() throws {
+        let json = """
+        {
+          "v": 1,
+          "client_id": "\(appId)"
+        }
+        """
 
-  func createSocket() {
-    do {
-      self.socket = try Socket.create(family: .unix, proto: .unix)
-      try self.socket?.setBlocking(mode: false)
-    }catch {
-      guard let error = error as? Socket.Error else {
-        print("[SwordRPC] Unable to create rpc socket")
-        return
-      }
-
-      print("[SwordRPC] Error creating rpc socket: \(error)")
+        try send(json: json, opcode: .handshake)
     }
-  }
 
-  func send(_ msg: String, _ op: OP) throws {
-    let payload = msg.data(using: .utf8)!
+    func subscribe(_ event: String) {
+        let json = """
+        {
+          "cmd": "SUBSCRIBE",
+          "evt": "\(event)",
+          "nonce": "\(UUID().uuidString)"
+        }
+        """
 
-    var buffer = UnsafeMutableRawBufferPointer.allocate(count: 8 + payload.count)
+        try? send(json: json)
+    }
 
-    defer { buffer.deallocate() }
+    func handleEvent(_ payload: String) {
+        var data = decode(payload)
 
-    buffer.copyBytes(from: payload)
-    buffer[8...] = buffer[..<payload.count]
-    buffer.storeBytes(of: op.rawValue, as: UInt32.self)
-    buffer.storeBytes(of: UInt32(payload.count), toByteOffset: 4, as: UInt32.self)
-
-    try self.socket?.write(from: buffer.baseAddress!, bufSize: buffer.count)
-  }
-
-  func receive() {
-    self.worker.asyncAfter(
-      deadline: .now() + .milliseconds(self.handlerInterval)
-    ) { [unowned self] in
-      guard let isConnected = self.socket?.isConnected, isConnected else {
-        self.disconnectHandler?(self, nil, nil)
-        self.delegate?.swordRPCDidDisconnect(self, code: nil, message: nil)
-        return
-      }
-
-      self.receive()
-
-      do {
-        let headerPtr = UnsafeMutablePointer<Int8>.allocate(capacity: 8)
-        let headerRawPtr = UnsafeRawPointer(headerPtr)
-
-        defer {
-          free(headerPtr)
+        guard let evt = data["evt"] as? String,
+              let event = Event(rawValue: evt)
+        else {
+            return
         }
 
-        var response = try self.socket?.read(into: headerPtr, bufSize: 8, truncate: true)
+        data = data["data"] as! [String: Any]
 
-        guard response! > 0 else {
-          return
+        switch event {
+        case .error:
+            let code = data["code"] as! Int
+            let message = data["message"] as! String
+            errorHandler?(self, code, message)
+            delegate?.swordRPCDidReceiveError(self, code: code, message: message)
+
+        case .join:
+            let secret = data["secret"] as! String
+            joinGameHandler?(self, secret)
+            delegate?.swordRPCDidJoinGame(self, secret: secret)
+
+        case .joinRequest:
+            let requestData = data["user"] as! [String: Any]
+//            let joinRequest = try! decoder.decode(
+//                JoinRequest.self, from: encode(requestData)
+//            )
+            // TODO: Resolve
+            let joinRequest = JoinRequest(avatar: "0", discriminator: "0000", userId: "0", username: "0")
+            let secret = data["secret"] as! String
+            joinRequestHandler?(self, joinRequest, secret)
+            delegate?.swordRPCDidReceiveJoinRequest(self, request: joinRequest, secret: secret)
+
+        case .ready:
+            connectHandler?(self)
+            delegate?.swordRPCDidConnect(self)
+            updatePresence()
+
+        case .spectate:
+            let secret = data["secret"] as! String
+            spectateGameHandler?(self, secret)
+            delegate?.swordRPCDidSpectateGame(self, secret: secret)
         }
+    }
 
-        let opValue = headerRawPtr.load(as: UInt32.self)
-        let length = headerRawPtr.load(fromByteOffset: 4, as: UInt32.self)
+    func updatePresence() {
+        worker.asyncAfter(deadline: .now() + .seconds(15)) { [unowned self] in
+            self.updatePresence()
 
-        guard length > 0, let op = OP(rawValue: opValue) else {
-          return
+            guard let presence = self.presence else {
+                return
+            }
+
+            self.presence = nil
+
+            let json = """
+            {
+              "cmd": "SET_ACTIVITY",
+              "args": {
+                "pid": \(self.pid),
+                "activity": \(String(data: try! self.encoder.encode(presence), encoding: .utf8)!)
+              },
+              "nonce": "\(UUID().uuidString)"
+            }
+            """
+
+            try? self.send(json: json)
         }
-
-        let payloadPtr = UnsafeMutablePointer<Int8>.allocate(capacity: Int(length))
-
-        defer {
-          free(payloadPtr)
-        }
-
-        response = try self.socket?.read(into: payloadPtr, bufSize: Int(length), truncate: true)
-
-        guard response! > 0 else {
-          return
-        }
-
-        let data = Data(bytes: UnsafeRawPointer(payloadPtr), count: Int(length))
-
-        self.handlePayload(op, data)
-
-      }catch {
-        return
-      }
     }
-  }
-
-  func handshake() {
-    do {
-      let json = """
-      {
-        "v": 1,
-        "client_id": "\(self.appId)"
-      }
-      """
-
-      try self.send(json, .handshake)
-    }catch {
-      print("[SwordRPC] Unable to handshake with Discord")
-      self.socket?.close()
-    }
-  }
-
-  func subscribe(_ event: String) {
-    let json = """
-    {
-      "cmd": "SUBSCRIBE",
-      "evt": "\(event)",
-      "nonce": "\(UUID().uuidString)"
-    }
-    """
-
-    try? self.send(json, .frame)
-  }
-
-  func handlePayload(_ op: OP, _ json: Data) {
-    switch op {
-    case .close:
-      let data = self.decode(json)
-      let code = data["code"] as! Int
-      let message = data["message"] as! String
-      self.socket?.close()
-      self.disconnectHandler?(self, code, message)
-      self.delegate?.swordRPCDidDisconnect(self, code: code, message: message)
-
-    case .ping:
-      try? self.send(String(data: json, encoding: .utf8)!, .pong)
-
-    case .frame:
-      self.handleEvent(self.decode(json))
-
-    default:
-      return
-    }
-  }
-
-  func handleEvent(_ data: [String: Any]) {
-    guard let evt = data["evt"] as? String,
-          let event = Event(rawValue: evt) else {
-      return
-    }
-
-    let data = data["data"] as! [String: Any]
-
-    switch event {
-    case.error:
-      let code = data["code"] as! Int
-      let message = data["message"] as! String
-      self.errorHandler?(self, code, message)
-      self.delegate?.swordRPCDidReceiveError(self, code: code, message: message)
-
-    case .join:
-      let secret = data["secret"] as! String
-      self.joinGameHandler?(self, secret)
-      self.delegate?.swordRPCDidJoinGame(self, secret: secret)
-
-    case .joinRequest:
-      let requestData = data["user"] as! [String: Any]
-      let joinRequest = try! self.decoder.decode(
-        JoinRequest.self, from: self.encode(requestData)
-      )
-      let secret = data["secret"] as! String
-      self.joinRequestHandler?(self, joinRequest, secret)
-      self.delegate?.swordRPCDidReceiveJoinRequest(self, request: joinRequest, secret: secret)
-
-    case .ready:
-      self.connectHandler?(self)
-      self.delegate?.swordRPCDidConnect(self)
-      self.updatePresence()
-
-    case.spectate:
-      let secret = data["secret"] as! String
-      self.spectateGameHandler?(self, secret)
-      self.delegate?.swordRPCDidSpectateGame(self, secret: secret)
-    }
-  }
-
-  func updatePresence() {
-    self.worker.asyncAfter(deadline: .now() + .seconds(15)) { [unowned self] in
-      self.updatePresence()
-
-      guard let presence = self.presence else {
-        return
-      }
-
-      self.presence = nil
-
-      let json = """
-          {
-            "cmd": "SET_ACTIVITY",
-            "args": {
-              "pid": \(self.pid),
-              "activity": \(String(data: try! self.encoder.encode(presence), encoding: .utf8)!)
-            },
-            "nonce": "\(UUID().uuidString)"
-          }
-          """
-
-      try? self.send(json, .frame)
-    }
-  }
-
 }

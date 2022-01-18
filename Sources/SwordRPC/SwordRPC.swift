@@ -7,91 +7,89 @@
 //
 
 import Foundation
-import Socket
 
 public class SwordRPC {
+    // MARK: App Info
 
-  // MARK: App Info
-  public let appId: String
-  public var handlerInterval: Int
-  public let autoRegister: Bool
-  public let steamId: String?
+    public let appId: String
+    public var handlerInterval: Int
+    public let autoRegister: Bool
 
-  // MARK: Technical stuff
-  let pid: Int32
-  var socket: Socket? = nil
-  let worker: DispatchQueue
-  let encoder = JSONEncoder()
-  let decoder = JSONDecoder()
-  var presence: RichPresence? = nil
+    // MARK: Technical stuff
 
-  // MARK: Event Handlers
-  public weak var delegate: SwordRPCDelegate? = nil
-  var connectHandler:      ((_ rpc: SwordRPC) -> ())? = nil
-  var disconnectHandler:   ((_ rpc: SwordRPC, _ code: Int?, _ msg: String?) -> ())? = nil
-  var errorHandler:        ((_ rpc: SwordRPC, _ code: Int, _ msg: String) -> ())? = nil
-  var joinGameHandler:     ((_ rpc: SwordRPC, _ secret: String) -> ())? = nil
-  var spectateGameHandler: ((_ rpc: SwordRPC, _ secret: String) -> ())? = nil
-  var joinRequestHandler:  ((_ rpc: SwordRPC, _ request: JoinRequest, _ secret: String) -> ())? = nil
+    let pid: Int32
+    var client: ConnectionClient?
+    let worker: DispatchQueue
+    let encoder = JSONEncoder()
+    let decoder = JSONDecoder()
+    var presence: RichPresence?
 
-  public init(
-    appId: String,
-    handlerInterval: Int = 1000,
-    autoRegister: Bool = true,
-    steamId: String? = nil
-  ) {
-    self.appId = appId
-    self.handlerInterval = handlerInterval
-    self.autoRegister = autoRegister
-    self.steamId = steamId
+    // MARK: Event Handlers
 
-    self.pid = ProcessInfo.processInfo.processIdentifier
-    self.worker = DispatchQueue(
-      label: "me.azoy.swordrpc.\(pid)",
-      qos: .userInitiated
-    )
-    self.encoder.dateEncodingStrategy = .secondsSince1970
+    public weak var delegate: SwordRPCDelegate?
+    var connectHandler: ((_ rpc: SwordRPC) -> Void)?
+    var disconnectHandler: ((_ rpc: SwordRPC, _ code: Int?, _ msg: String?) -> Void)?
+    var errorHandler: ((_ rpc: SwordRPC, _ code: Int, _ msg: String) -> Void)?
+    var joinGameHandler: ((_ rpc: SwordRPC, _ secret: String) -> Void)?
+    var spectateGameHandler: ((_ rpc: SwordRPC, _ secret: String) -> Void)?
+    var joinRequestHandler: ((_ rpc: SwordRPC, _ request: JoinRequest, _ secret: String) -> Void)?
 
-    self.createSocket()
+    public init(
+        appId: String,
+        handlerInterval: Int = 1000,
+        autoRegister: Bool = true
+    ) {
+        self.appId = appId
+        self.handlerInterval = handlerInterval
+        self.autoRegister = autoRegister
 
-    self.registerUrl()
-  }
-
-  public func connect() {
-    let tmp = NSTemporaryDirectory()
-
-    guard let socket = self.socket else {
-      print("[SwordRPC] Unable to connect")
-      return
+        pid = ProcessInfo.processInfo.processIdentifier
+        worker = DispatchQueue(
+            label: "me.azoy.swordrpc.\(pid)",
+            qos: .userInitiated
+        )
+        encoder.dateEncodingStrategy = .secondsSince1970
     }
 
-    for i in 0 ..< 10 {
-      try? socket.connect(to: "\(tmp)/discord-ipc-\(i)")
+    public func connect() {
+        let tempDir = NSTemporaryDirectory()
 
-      guard !socket.isConnected else {
-        self.handshake()
-        self.receive()
+        for ipcPort in 0 ..< 10 {
+            let socketPath = tempDir + "discord-ipc-\(ipcPort)-gaming"
+            let localClient = ConnectionClient(pipe: socketPath)
+            do {
+                try localClient.connect()
 
-        self.subscribe("ACTIVITY_JOIN")
-        self.subscribe("ACTIVITY_SPECTATE")
-        self.subscribe("ACTIVITY_JOIN_REQUEST")
+                // Set handlers
+                localClient.textHandler = handleEvent
 
-        return
-      }
+                client = localClient
+                // Attempt handshaking
+                try handshake()
+            } catch {
+                // If an error occurrs, we should not log it.
+                // We must iterate through all 10 ports before logging.
+                continue
+            }
+
+//            subscribe("ACTIVITY_JOIN")
+//            subscribe("ACTIVITY_SPECTATE")
+//            subscribe("ACTIVITY_JOIN_REQUEST")
+            return
+        }
+
+        print("[SwordRPC] Discord not detected")
     }
 
-    print("[SwordRPC] Discord not detected")
-  }
+    public func setPresence(_ presence: RichPresence) {
+        self.presence = presence
+    }
 
-  public func setPresence(_ presence: RichPresence) {
-    self.presence = presence
-  }
-
-  public func reply(to request: JoinRequest, with reply: JoinReply) {
-    let json = """
+    public func reply(to request: JoinRequest, with reply: JoinReply) {
+        let json = """
         {
           "cmd": "\(
-            reply == .yes ? "SEND_ACTIVITY_JOIN_INVITE" : "CLOSE_ACTIVITY_JOIN_REQUEST"
+              reply == .yes ? "SEND_ACTIVITY_JOIN_INVITE" : "CLOSE_ACTIVITY_JOIN_REQUEST"
           )",
           "args": {
             "user_id": "\(request.userId)"
@@ -99,7 +97,6 @@ public class SwordRPC {
         }
         """
 
-    try? self.send(json, .frame)
-  }
-
+        try? send(json: json)
+    }
 }
