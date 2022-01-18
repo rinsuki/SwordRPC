@@ -9,16 +9,6 @@
 import Foundation
 
 extension SwordRPC {
-    /// Serializes the given data as JSON.
-    func encode(_ value: Any) -> String {
-        do {
-            let encoded = try JSONSerialization.data(withJSONObject: value, options: [])
-            return String(data: encoded, encoding: .utf8) ?? ""
-        } catch {
-            return ""
-        }
-    }
-
     /// Decodes the given string as a JSON object.
     func decode(_ json: String) -> [String: Any] {
         decode(json.data(using: .utf8)!)
@@ -34,18 +24,25 @@ extension SwordRPC {
     }
 
     /// Serializes and sends the given object as JSON.
-    func send(type: Any) throws {
-        let encoded = encode(type)
-        try client?.send(data: encoded)
+    func send(_ response: Encodable) throws {
+        try send(response, opcode: .frame)
+    }
+
+    /// Sends the given JSON string with the given opcode.
+    func send(_ response: Encodable, opcode: IPCOpcode) throws {
+        let data = try response.toJSON()
+        try client?.send(data: data, opcode: opcode)
     }
 
     /// Sends the given JSON string.
     func send(json: String) throws {
-        try client?.send(data: json)
+        try client?.send(data: json, opcode: .frame)
     }
+}
 
-    /// Sends the given JSON string with the given opcode.
-    func send(json: String, opcode: IPCOpcode) throws {
-        try client?.send(data: json, opcode: opcode)
+extension Encodable {
+    func toJSON() throws -> String {
+        let result = try JSONEncoder().encode(self)
+        return String(bytes: result, encoding: .utf8) ?? ""
     }
 }

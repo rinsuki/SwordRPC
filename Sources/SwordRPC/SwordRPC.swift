@@ -72,9 +72,9 @@ public class SwordRPC {
                 continue
             }
 
-            subscribe("ACTIVITY_JOIN")
-            subscribe("ACTIVITY_SPECTATE")
-            subscribe("ACTIVITY_JOIN_REQUEST")
+            subscribe(.join)
+            subscribe(.spectate)
+            subscribe(.joinRequest)
             return
         }
 

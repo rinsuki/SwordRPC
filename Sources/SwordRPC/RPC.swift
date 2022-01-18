@@ -11,26 +11,14 @@ import Foundation
 extension SwordRPC {
     /// Sends a handshake to begin RPC interaction.
     func handshake() throws {
-        let json = """
-        {
-          "v": 1,
-          "client_id": "\(appId)"
-        }
-        """
+        let response = Handshake(version: 1, clientId: appId)
 
-        try send(json: json, opcode: .handshake)
+        try send(response, opcode: .handshake)
     }
 
-    func subscribe(_ event: String) {
-        let json = """
-        {
-          "cmd": "SUBSCRIBE",
-          "evt": "\(event)",
-          "nonce": "\(UUID().uuidString)"
-        }
-        """
-
-        try? send(json: json)
+    func subscribe(_ event: Event) {
+        let response = GenericResponse(cmd: .subscribe, evt: event)
+        try? send(response)
     }
 
     func handleEvent(_ payload: String) {

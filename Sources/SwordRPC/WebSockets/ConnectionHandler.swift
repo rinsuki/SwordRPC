@@ -65,11 +65,6 @@ extension ConnectionClient {
         }
     }
 
-    /// Sends the given data for the given opcode.
-    func send(data: String) throws {
-        try send(data: data, opcode: .frame)
-    }
-
     /// Sends the given data for the given opcode to the connected WebSocket.
     func send(data: String, opcode: IPCOpcode) throws {
         let frame = IPCPayload(opcode: opcode, payload: data)
