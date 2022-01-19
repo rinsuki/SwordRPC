@@ -28,8 +28,6 @@ final class IPCInboundHandler: ChannelInboundHandler {
         // We utilize readNullTerminatedString to read to the end of this buffer.
         let payload = buffer.readString(length: Int(payloadSize))!
 
-        print("read op \(opcode), size \(size), payload \(payload)")
-
         let result = IPCPayload(opcode: opcode, payload: payload)
         context.fireChannelRead(wrapInboundOut(result))
     }
@@ -51,8 +49,6 @@ final class IPCOutboundHandler: ChannelOutboundHandler {
         buffer.writeInteger(UInt32(data.opcode.rawValue), endianness: .little, as: UInt32.self)
         buffer.writeInteger(UInt32(payloadSize), endianness: .little, as: UInt32.self)
         buffer.writeString(data.payload)
-
-        print("wrote op \(data.opcode), size \(payloadSize), payload \(data.payload)")
 
         context.write(wrapOutboundOut(buffer), promise: promise)
     }
