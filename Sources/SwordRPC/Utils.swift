@@ -33,11 +33,6 @@ extension SwordRPC {
         let data = try response.toJSON()
         try client?.send(data: data, opcode: opcode)
     }
-
-    /// Sends the given JSON string.
-    func send(json: String) throws {
-        try client?.send(data: json, opcode: .frame)
-    }
 }
 
 extension Encodable {

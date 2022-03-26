@@ -11,21 +11,25 @@ import Foundation
 extension SwordRPC {
     /// Sends a handshake to begin RPC interaction.
     func handshake() throws {
-        let response = Handshake(version: 1, clientId: appId)
-
+        let response = AuthorizationRequest(version: 1, clientId: appId)
         try send(response, opcode: .handshake)
     }
 
-    func subscribe(_ event: Event) {
-        let response = GenericResponse(cmd: .subscribe, evt: event)
-        try? send(response)
+    /// Emits a subscribe request for the given command type.
+    /// https://discord.com/developers/docs/topics/rpc#subscribe
+    /// - Parameter type: The event type to subscribe for.
+    func subscribe(_ type: EventType) {
+        let command = Command(cmd: .subscribe, evt: type)
+        try? send(command)
     }
 
+    /// Handles incoming events from Discord.
+    /// - Parameter payload: JSON given over IPC.
     func handleEvent(_ payload: String) {
         var data = decode(payload)
 
         guard let evt = data["evt"] as? String,
-              let event = Event(rawValue: evt)
+              let event = EventType(rawValue: evt)
         else {
             return
         }
@@ -36,37 +40,37 @@ extension SwordRPC {
         case .error:
             let code = data["code"] as! Int
             let message = data["message"] as! String
-            errorHandler?(self, code, message)
-            delegate?.swordRPCDidReceiveError(self, code: code, message: message)
+            delegate?.rpcDidReceiveError(self, code: code, message: message)
 
         case .join:
             let secret = data["secret"] as! String
-            joinGameHandler?(self, secret)
-            delegate?.swordRPCDidJoinGame(self, secret: secret)
+            delegate?.rpcDidJoinGame(self, secret: secret)
 
         case .joinRequest:
-            let requestData = data["user"] as! [String: Any]
-//            let joinRequest = try! decoder.decode(
-//                JoinRequest.self, from: encode(requestData)
-//            )
-            // TODO: Resolve
-            let joinRequest = JoinRequest(avatar: "0", discriminator: "0000", userId: "0", username: "0")
+            let user = data["user"] as! [String: String]
+
+            // TODO: can we properly decode this without doing this manually?
+            let joinRequest = PartialUser(
+                avatar: user["avatar"]!,
+                discriminator: user["discriminator"]!,
+                userId: user["id"]!,
+                username: user["username"]!
+            )
+
             let secret = data["secret"] as! String
-            joinRequestHandler?(self, joinRequest, secret)
-            delegate?.swordRPCDidReceiveJoinRequest(self, request: joinRequest, secret: secret)
+            delegate?.rpcDidReceiveJoinRequest(self, user: joinRequest, secret: secret)
 
         case .ready:
-            connectHandler?(self)
-            delegate?.swordRPCDidConnect(self)
+            delegate?.rpcDidConnect(self)
             updatePresence()
 
         case .spectate:
             let secret = data["secret"] as! String
-            spectateGameHandler?(self, secret)
-            delegate?.swordRPCDidSpectateGame(self, secret: secret)
+            delegate?.rpcDidSpectateGame(self, secret: secret)
         }
     }
 
+    /// Updates the presence.
     func updatePresence() {
         worker.asyncAfter(deadline: .now() + .seconds(15)) { [unowned self] in
             self.updatePresence()
@@ -77,18 +81,12 @@ extension SwordRPC {
 
             self.presence = nil
 
-            let json = """
-            {
-              "cmd": "SET_ACTIVITY",
-              "args": {
-                "pid": \(self.pid),
-                "activity": \(String(data: try! self.encoder.encode(presence), encoding: .utf8)!)
-              },
-              "nonce": "\(UUID().uuidString)"
-            }
-            """
+            let command = Command(cmd: .setActivity, args: [
+                "pid": .int(Int(self.pid)),
+                "activity": .activity(presence),
+            ])
 
-            try? self.send(json: json)
+            try? self.send(command)
         }
     }
 }

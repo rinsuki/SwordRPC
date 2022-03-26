@@ -7,69 +7,72 @@
 //
 
 public protocol SwordRPCDelegate: AnyObject {
-    func swordRPCDidConnect(
+    /// Called back when our RPC connects to Discord.
+    /// - Parameter rpc: The current RPC to work with.
+    func rpcDidConnect(
         _ rpc: SwordRPC
     )
 
-    func swordRPCDidDisconnect(
+    /// Called when Discord disconnects our RPC.
+    /// - Parameters:
+    ///   - rpc: The current RPC to work with.
+    ///   - code: The disconnection code, if given by Discord.
+    ///   - msg: The disconnection reason, if given by Discord.
+    func rpcDidDisconnect(
         _ rpc: SwordRPC,
         code: Int?,
         message msg: String?
     )
 
-    func swordRPCDidReceiveError(
+    /// Called when the RPC receives an error from Discord.
+    /// The connection will be terminated immediately.
+    /// - Parameters:
+    ///   - rpc: The current RPC to work with.
+    ///   - code: The error code as provided by Discord.
+    ///   - msg: The error message as provided by Discord.
+    func rpcDidReceiveError(
         _ rpc: SwordRPC,
         code: Int,
         message msg: String
     )
 
-    func swordRPCDidJoinGame(
+    /// Called when Discord notifies us a user joined a game.
+    /// - Parameters:
+    ///   - rpc: The current RPC to work with.
+    ///   - secret: The join secret for the invite.
+    func rpcDidJoinGame(
         _ rpc: SwordRPC,
         secret: String
     )
 
-    func swordRPCDidSpectateGame(
+    /// Called when Discord notifies us a client is spectating a game.
+    /// - Parameters:
+    ///   - rpc: The current RPC to work with.
+    ///   - secret: The spectate secret for the invite.
+    func rpcDidSpectateGame(
         _ rpc: SwordRPC,
         secret: String
     )
 
-    func swordRPCDidReceiveJoinRequest(
+    /// Called when Discord notifies us the client received a join request.
+    /// - Parameters:
+    ///   - rpc: The current RPC to work with.
+    ///   - user: The user requesting an invite.
+    ///   - secret: The spectate secret for the request.
+    func rpcDidReceiveJoinRequest(
         _ rpc: SwordRPC,
-        request: JoinRequest,
+        user: PartialUser,
         secret: String
     )
 }
 
+/// A dummy extension providing empty, default functions for our protocol.
+/// We do this to avoid using optional, as it forces our functions to be @objc.
 public extension SwordRPCDelegate {
-    func swordRPCDidConnect(
-        _: SwordRPC
-    ) {}
-
-    func swordRPCDidDisconnect(
-        _: SwordRPC,
-        code _: Int?,
-        message _: String?
-    ) {}
-
-    func swordRPCDidReceiveError(
-        _: SwordRPC,
-        code _: Int,
-        message _: String
-    ) {}
-
-    func swordRPCDidJoinGame(
-        _: SwordRPC,
-        secret _: String
-    ) {}
-
-    func swordRPCDidSpectateGame(
-        _: SwordRPC,
-        secret _: String
-    ) {}
-
-    func swordRPCDidReceiveJoinRequest(
-        _: SwordRPC,
-        request _: JoinRequest,
-        secret _: String
-    ) {}
+    func rpcDidConnect(_: SwordRPC) {}
+    func rpcDidDisconnect(_: SwordRPC, code _: Int?, message _: String?) {}
+    func rpcDidReceiveError(_: SwordRPC, code _: Int, message _: String) {}
+    func rpcDidJoinGame(_: SwordRPC, secret _: String) {}
+    func rpcDidSpectateGame(_: SwordRPC, secret _: String) {}
+    func rpcDidReceiveJoinRequest(_: SwordRPC, user _: PartialUser, secret _: String) {}
 }

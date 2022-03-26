@@ -75,22 +75,31 @@ public class SwordRPC {
         print("[SwordRPC] Discord not detected")
     }
 
+    /// Sets the presence for this RPC connection.
+    /// - Parameter presence: The presence to display.
     public func setPresence(_ presence: RichPresence) {
         self.presence = presence
     }
 
-    public func reply(to request: JoinRequest, with reply: JoinReply) {
-        let json = """
-        {
-          "cmd": "\(
-              reply == .yes ? "SEND_ACTIVITY_JOIN_INVITE" : "CLOSE_ACTIVITY_JOIN_REQUEST"
-          )",
-          "args": {
-            "user_id": "\(request.userId)"
-          }
-        }
-        """
+    /// Replies to an activity join request.
+    /// - Parameters:
+    ///   - user: The user making the request
+    ///   - reply: Whether to accept or decline the request.
+    public func reply(to user: PartialUser, with reply: JoinReply) {
+        var type: CommandType
 
-        try? send(json: json)
+        switch reply {
+        case .yes:
+            type = .sendActivityJoinInvite
+        case .ignore, .no:
+            type = .closeActivityJoinRequest
+        }
+
+        // We must give Discord the requesting user's ID to handle.
+        let command = Command(cmd: type, args: [
+            "user_id": .string(user.userId),
+        ])
+
+        try? send(command)
     }
 }

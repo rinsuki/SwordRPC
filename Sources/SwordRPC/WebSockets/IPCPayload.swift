@@ -17,6 +17,7 @@ enum IPCOpcode: UInt32 {
     case pong = 4
 }
 
+/// A structure for the IPC payload.
 struct IPCPayload {
     let opcode: IPCOpcode
     let payload: String
