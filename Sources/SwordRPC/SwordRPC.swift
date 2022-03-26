@@ -27,12 +27,6 @@ public class SwordRPC {
     // MARK: Event Handlers
 
     public weak var delegate: SwordRPCDelegate?
-    var connectHandler: ((_ rpc: SwordRPC) -> Void)?
-    var disconnectHandler: ((_ rpc: SwordRPC, _ code: Int?, _ msg: String?) -> Void)?
-    var errorHandler: ((_ rpc: SwordRPC, _ code: Int, _ msg: String) -> Void)?
-    var joinGameHandler: ((_ rpc: SwordRPC, _ secret: String) -> Void)?
-    var spectateGameHandler: ((_ rpc: SwordRPC, _ secret: String) -> Void)?
-    var joinRequestHandler: ((_ rpc: SwordRPC, _ request: JoinRequest, _ secret: String) -> Void)?
 
     public init(
         appId: String,
