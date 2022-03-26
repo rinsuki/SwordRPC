@@ -22,24 +22,23 @@ public class SwordRPC {
     let worker: DispatchQueue
     let encoder = JSONEncoder()
     let decoder = JSONDecoder()
+
+    // MARK: Presence-related metadata
+
     var presence: RichPresence?
 
     // MARK: Event Handlers
 
     public weak var delegate: SwordRPCDelegate?
 
-    public init(
-        appId: String,
-        handlerInterval: Int = 1000,
-        autoRegister: Bool = true
-    ) {
+    public init(appId: String, handlerInterval: Int = 1000, autoRegister: Bool = true) {
         self.appId = appId
         self.handlerInterval = handlerInterval
         self.autoRegister = autoRegister
 
         pid = ProcessInfo.processInfo.processIdentifier
         worker = DispatchQueue(
-            label: "me.azoy.swordrpc.\(pid)",
+            label: "space.joscomputing.swordrpc.\(pid)",
             qos: .userInitiated
         )
         encoder.dateEncodingStrategy = .secondsSince1970
@@ -56,6 +55,7 @@ public class SwordRPC {
 
                 // Set handlers
                 localClient.textHandler = handleEvent
+                localClient.disconnectHandler = handleEvent
 
                 client = localClient
                 // Attempt handshaking
@@ -73,12 +73,6 @@ public class SwordRPC {
         }
 
         print("[SwordRPC] Discord not detected")
-    }
-
-    /// Sets the presence for this RPC connection.
-    /// - Parameter presence: The presence to display.
-    public func setPresence(_ presence: RichPresence) {
-        self.presence = presence
     }
 
     /// Replies to an activity join request.

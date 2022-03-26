@@ -14,13 +14,13 @@ class ConnectionClient: ChannelInboundHandler {
     var channel: Channel?
     let pipePath: String
 
-    /// Initializes a new WebSockets client for the given pipe.
+    /// Initializes a new socket client for the given pipe.
     init(pipe pipePath: String) {
         self.pipePath = pipePath
     }
 
     /// Called upon a disconnect.
-    var disconnectHandler: ((_ data: String) -> Void)?
+    var disconnectHandler: ((_ text: String) -> Void)?
     /// Called upon a text event.
     var textHandler: ((_ text: String) -> Void)?
 
@@ -32,8 +32,7 @@ class ConnectionClient: ChannelInboundHandler {
             // Enable SO_REUSEADDR.
             .channelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)
             .channelInitializer { channel in
-                // We cannot do an HTTP upgrade dance, so we forcibly add
-                // WebSockets-only handlers.
+                // We add our custom inbound/outbound coders.
                 channel.pipeline.addHandlers([
                     IPCInboundHandler(),
                     IPCOutboundHandler(),

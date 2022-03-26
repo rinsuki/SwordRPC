@@ -14,7 +14,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        // WebSockets, HTTP
+        // UNIX sockets, packet serialization
         .package(url: "https://github.com/apple/swift-nio", from: "2.3.0"),
     ],
     targets: [

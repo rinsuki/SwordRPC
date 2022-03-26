@@ -31,6 +31,9 @@ extension SwordRPC {
         guard let evt = data["evt"] as? String,
               let event = EventType(rawValue: evt)
         else {
+            // We'll treat this as a close.
+            // ...hopefully.
+            delegate?.rpcDidDisconnect(self, code: data["code"] as? Int, message: data["message"] as? String)
             return
         }
 
@@ -67,26 +70,6 @@ extension SwordRPC {
         case .spectate:
             let secret = data["secret"] as! String
             delegate?.rpcDidSpectateGame(self, secret: secret)
-        }
-    }
-
-    /// Updates the presence.
-    func updatePresence() {
-        worker.asyncAfter(deadline: .now() + .seconds(15)) { [unowned self] in
-            self.updatePresence()
-
-            guard let presence = self.presence else {
-                return
-            }
-
-            self.presence = nil
-
-            let command = Command(cmd: .setActivity, args: [
-                "pid": .int(Int(self.pid)),
-                "activity": .activity(presence),
-            ])
-
-            try? self.send(command)
         }
     }
 }
