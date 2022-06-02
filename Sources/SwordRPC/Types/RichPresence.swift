@@ -24,6 +24,18 @@ public extension RichPresence {
     struct Timestamps: Encodable {
         public var end: Date?
         public var start: Date?
+
+        enum CodingKeys: String, CodingKey {
+            case end
+            case start
+        }
+
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+
+            try container.encodeIfPresent(start.map { Int($0.timeIntervalSince1970 * 1000) }, forKey: .start)
+            try container.encodeIfPresent(end.map { Int($0.timeIntervalSince1970 * 1000) }, forKey: .end)
+        }
     }
 
     struct Assets: Encodable {

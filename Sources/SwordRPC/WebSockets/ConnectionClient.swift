@@ -34,7 +34,7 @@ class ConnectionClient: ChannelInboundHandler {
             .channelInitializer { channel in
                 // We add our custom inbound/outbound coders.
                 channel.pipeline.addHandlers([
-                    IPCInboundHandler(),
+                    ByteToMessageHandler(IPCInboundHandler()),
                     IPCOutboundHandler(),
                     self,
                 ])

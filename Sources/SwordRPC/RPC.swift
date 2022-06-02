@@ -65,7 +65,7 @@ extension SwordRPC {
 
         case .ready:
             delegate?.rpcDidConnect(self)
-            updatePresence()
+            startPresenceUpdater()
 
         case .spectate:
             let secret = data["secret"] as! String

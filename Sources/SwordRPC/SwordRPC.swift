@@ -7,6 +7,8 @@
 //
 
 import Foundation
+import os.log
+import Combine
 
 public class SwordRPC {
     // MARK: App Info
@@ -20,8 +22,11 @@ public class SwordRPC {
     let pid: Int32
     var client: ConnectionClient?
     let worker: DispatchQueue
+    var log: Logger
     let encoder = JSONEncoder()
     let decoder = JSONDecoder()
+    let currentPresence = CurrentValueSubject<RichPresence?, Never>(nil)
+    var presenceUpdater: AnyCancellable!
 
     // MARK: Presence-related metadata
 
@@ -37,6 +42,7 @@ public class SwordRPC {
         self.autoRegister = autoRegister
 
         pid = ProcessInfo.processInfo.processIdentifier
+        log = Logger(subsystem: "space.joscomputing.swordrpc.\(pid)", category: "rpc")
         worker = DispatchQueue(
             label: "space.joscomputing.swordrpc.\(pid)",
             qos: .userInitiated

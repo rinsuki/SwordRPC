@@ -8,28 +8,39 @@
 import Foundation
 import NIOCore
 
-final class IPCInboundHandler: ChannelInboundHandler {
+enum IPCHandlingError: Error {
+    case unknownOpcode
+    case payloadTooShort
+}
+
+final class IPCInboundHandler: ByteToMessageDecoder {
     public typealias InboundIn = ByteBuffer
     public typealias InboundOut = IPCPayload
 
-    public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-        var buffer = unwrapInboundIn(data)
+    func decode(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
+        guard let opcodeInt = buffer.getInteger(at: 0, endianness: .little, as: UInt32.self) else {
+            return .needMoreData
+        }
+        guard let opcode = IPCOpcode(rawValue: opcodeInt) else {
+            throw IPCHandlingError.unknownOpcode
+        }
 
-        // Obtain our opcode data.
-        let opcodeInt = buffer.readInteger(endianness: .little, as: UInt32.self)!
-        let opcode = IPCOpcode(rawValue: opcodeInt)!
+        guard let size = buffer.getInteger(at: 4, endianness: .little, as: UInt32.self).map({ Int($0) }) else {
+            return .needMoreData
+        }
 
-        // Determine the size of our payload.
-        // This is <payload size> - <opcode> - <size>.
-        let size = buffer.readInteger(endianness: .little, as: UInt32.self)!
-        let payloadSize = size
+        if buffer.readableBytes - 8 < size {
+            return .needMoreData
+        }
 
-        // Finally, obtain our payload contents.
-        // We utilize readNullTerminatedString to read to the end of this buffer.
-        let payload = buffer.readString(length: Int(payloadSize))!
+        guard let payload = buffer.getString(at: 8, length: size) else {
+            throw IPCHandlingError.payloadTooShort
+        }
 
         let result = IPCPayload(opcode: opcode, payload: payload)
-        context.fireChannelRead(wrapInboundOut(result))
+        context.fireChannelRead(self.wrapInboundOut(result))
+        buffer.moveReaderIndex(to: 8 + size)
+        return .needMoreData
     }
 }
 
