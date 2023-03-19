@@ -66,7 +66,7 @@ public extension RichPresence {
             var container = encoder.container(keyedBy: CodingKeys.self)
             try container.encodeIfPresent(id, forKey: .id)
 
-            guard let max = self.max, let size = size else {
+            guard let max = self.max, let size else {
                 return
             }
 

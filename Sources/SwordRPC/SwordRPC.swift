@@ -6,9 +6,9 @@
 //  Copyright © 2017 Alejandro Alonso. All rights reserved.
 //
 
+import Combine
 import Foundation
 import os.log
-import Combine
 
 public class SwordRPC {
     // MARK: App Info
