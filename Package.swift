@@ -1,4 +1,4 @@
-// swift-tools-version:5.5
+// swift-tools-version:5.8
 
 import PackageDescription
 
@@ -6,6 +6,7 @@ let package = Package(
     name: "SwordRPC",
     platforms: [
         .macOS(.v11),
+        .macCatalyst(.v14),
     ],
     products: [
         .library(
@@ -15,7 +16,7 @@ let package = Package(
     ],
     dependencies: [
         // UNIX sockets, packet serialization
-        .package(url: "https://github.com/apple/swift-nio", from: "2.3.0"),
+        .package(url: "https://github.com/apple/swift-nio", from: "2.0.0"),
     ],
     targets: [
         .target(
