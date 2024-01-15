@@ -14,8 +14,6 @@ public class SwordRPC {
     // MARK: App Info
 
     public let appId: String
-    public var handlerInterval: Int
-    public let autoRegister: Bool
 
     // MARK: Technical stuff
 
@@ -36,10 +34,8 @@ public class SwordRPC {
 
     public weak var delegate: SwordRPCDelegate?
 
-    public init(appId: String, handlerInterval: Int = 1000, autoRegister: Bool = true) {
+    public init(appId: String) {
         self.appId = appId
-        self.handlerInterval = handlerInterval
-        self.autoRegister = autoRegister
 
         pid = ProcessInfo.processInfo.processIdentifier
         log = Logger(subsystem: "space.joscomputing.swordrpc.\(pid)", category: "rpc")
@@ -86,7 +82,7 @@ public class SwordRPC {
     ///   - user: The user making the request
     ///   - reply: Whether to accept or decline the request.
     public func reply(to user: PartialUser, with reply: JoinReply) {
-        var type: CommandType
+        let type: CommandType
 
         switch reply {
         case .yes:
