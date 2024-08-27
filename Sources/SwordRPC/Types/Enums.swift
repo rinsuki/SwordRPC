@@ -34,13 +34,19 @@ public enum JoinReply {
     case ignore
 }
 
-/// Enum for Activity Types
-/// https://discord.com/developers/docs/developer-tools/game-sdk#activitytype-enum
+/// Posible activity types.
+/// https://discord.com/developers/docs/topics/gateway-events#activity-object-activity-types
 public enum ActivityType: Int, Codable {
-    case playing = 0
-    // case streaming = 1
+    /// "Playing Rocket League"
+    case game = 0
+    /// "Streaming Rocket League"
+    case streaming = 1
+    /// "Listening to Spotify"
     case listening = 2
+    /// "Watching YouTube Together"
     case watching = 3
-    // case custom = 4
+    /// Custom emoji and state. ":smiley: I am cool"
+    case custom = 4
+    /// "Competing in Arena World Champions"
     case competing = 5
 }
