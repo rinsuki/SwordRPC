@@ -42,8 +42,8 @@ public class SwordRPC {
             qos: .userInitiated
         )
     }
-    
-    /// Connects to Discord to serve RPC.
+
+    /// Connects to a Discord client to serve RPC.
     public func connect() {
         let tempDir = NSTemporaryDirectory()
 
@@ -73,6 +73,20 @@ public class SwordRPC {
         }
 
         print("[SwordRPC] Discord not detected")
+    }
+
+    /// Disconnects from the connected Discord client.
+    /// If SwordRPC is not currently connected, this performs nothing.
+    public func disconnect() {
+        // We only need to clean up if our client is present and connected.
+        guard let client else {
+            return
+        }
+
+        // Clear presence.
+        clearPresence()
+        client.close()
+        self.client = nil
     }
 
     /// Replies to an activity join request.
