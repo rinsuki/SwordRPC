@@ -21,8 +21,6 @@ public class SwordRPC {
     var client: ConnectionClient?
     let worker: DispatchQueue
     var log: Logger
-    let encoder = JSONEncoder()
-    let decoder = JSONDecoder()
     let currentPresence = CurrentValueSubject<RichPresence?, Never>(nil)
     var presenceUpdater: AnyCancellable!
 
@@ -43,9 +41,9 @@ public class SwordRPC {
             label: "space.joscomputing.swordrpc.\(pid)",
             qos: .userInitiated
         )
-        encoder.dateEncodingStrategy = .secondsSince1970
     }
-
+    
+    /// Connects to Discord to serve RPC.
     public func connect() {
         let tempDir = NSTemporaryDirectory()
 
