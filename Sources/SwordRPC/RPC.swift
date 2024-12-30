@@ -31,6 +31,10 @@ extension SwordRPC {
         guard let evt = data["evt"] as? String,
               let event = EventType(rawValue: evt)
         else {
+            if data["nonce"] is String {
+                // this is response to our sent commands, just ignore at this time
+                return
+            }
             // We'll treat this as a close.
             // ...hopefully.
             delegate?.rpcDidDisconnect(self, code: data["code"] as? Int, message: data["message"] as? String)
